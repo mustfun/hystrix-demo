@@ -1,0 +1,56 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>hystrix-demo-parent</artifactId>
+        <groupId>com.dzy.learn</groupId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../hystrix-demo-parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>hystrix-demo-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <name>hystrix-demo-biz</name>
+    <url>http://www.biwan.com</url>
+
+    <properties>
+        <start-class>com.itar.soa.hystrix-demo.BootLauncher</start-class>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.dzy.learn</groupId>
+            <artifactId>hystrix-demo-service</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <finalName>hystrix-demo-biz</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${springboot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>exec</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>
