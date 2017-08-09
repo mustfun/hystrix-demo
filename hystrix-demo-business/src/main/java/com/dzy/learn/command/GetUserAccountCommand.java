@@ -58,8 +58,8 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount>{
     }
 
     /**
-     * Use the HttpCookie value as the cacheKey so multiple executions
-     * in the same HystrixRequestContext will respond from cache.
+     * 使用httpCookie的值作为一个缓存值，所以同一个HystrixRequestContext会从cache中直接返回
+     *
      */
     @Override
     protected String getCacheKey() {
@@ -73,8 +73,7 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount>{
     @Override
     protected UserAccount getFallback() {
         /*
-         * first 3 come from the HttpCookie
-         * next 3 are stubbed defaults
+         * 前3个从httpCookie中获取，后3个参数固定下来
          */
         return new UserAccount(userCookie.userId, userCookie.name, userCookie.accountType, true, true, true);
     }
