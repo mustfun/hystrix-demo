@@ -55,7 +55,7 @@ public class HystrixCommandBeanPostProcessor implements BeanPostProcessor {
 
             if (isHystrix){
                 //开始实例化这个bean
-                new HystrixCommandProxy().getProxy(bean,list);
+                return new HystrixCommandProxy().getProxy(bean,list);
             }
 
 
