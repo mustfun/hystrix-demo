@@ -10,16 +10,16 @@ import java.lang.reflect.Method;
 
 public class HystrixFatory {
 
-	// 命令组
+	// 命令组(同时也是对服务进行分组)
 	private final static String GROUP_KEY = "default_group";
 	
-	// 命令
+	// 命令(服务标识)
 	private final static String COMMAND_KEY = "default_command";
 	
-	// 线程池
+	// 线程池(将服务隔离到不同的线程中，避免共享线程池导致其他服务不可用)
 	private final static String THREAD_POOL_KEY = "default_thread_pool";
 	
-	// 线程池核心线程数，默认值：10
+	// 线程池核心线程数，默认值：10 (下面是线程池的一些配置)
 	private final static String CORE_THREAD_SIZE = "10";
 	
 	// 请求等待队列，默认值：-1
