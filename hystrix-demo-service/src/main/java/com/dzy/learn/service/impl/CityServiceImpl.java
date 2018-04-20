@@ -24,7 +24,6 @@ public class CityServiceImpl implements CityService {
     @Override
     @HystrixCommand(fallbackMethod = "defaultCity")
     public City getOne(Integer id) {
-        LOG.info("请求参数是:{}",id);
         City city = null;
         city = cityMapper.selectByPrimaryKey(id);
         // 模拟取数据时候的异常信息
@@ -35,8 +34,9 @@ public class CityServiceImpl implements CityService {
             // 不处理异常情况
         }
 
-        // 5%的概率会去调用fallback,失败
-        if (Math.random() > 0.95) {
+        // 40%的概率会去调用fallback,失败
+        if (Math.random() > 0.6) {
+            LOG.warn("因为代码原因和网络原因执行失败了，需要调用fallback方法");
             throw new RuntimeException("执行getOneCity请求时候随机失败啦----------");
         }
 
@@ -49,10 +49,12 @@ public class CityServiceImpl implements CityService {
                 // 超时不作处理
             }
         }
+        LOG.warn("执行成功");
         return city;
     }
 
     public City defaultCity(Integer id){
+        LOG.info("我是回调方法，我被调用了........");
         City city  =new City();
         city.setId(1000);
         city.setName("我是测试城市");
