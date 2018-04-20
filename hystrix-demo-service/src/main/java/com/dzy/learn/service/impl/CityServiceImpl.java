@@ -1,9 +1,11 @@
 package com.dzy.learn.service.impl;
 
-import com.dangdang.ddframe.rdb.sharding.api.HintManager;
 import com.dzy.learn.dao.mapper.CityMapper;
 import com.dzy.learn.model.City;
 import com.dzy.learn.service.CityService;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,21 +16,48 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CityServiceImpl implements CityService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(CityServiceImpl.class);
+
     @Autowired
     private CityMapper cityMapper;
 
     @Override
+    @HystrixCommand(fallbackMethod = "defaultCity")
     public City getOne(Integer id) {
-        //强制切换路由为主库
-//        HintManager hintManager = HintManager.getInstance();
-//        hintManager.setMasterRouteOnly();
+        LOG.info("请求参数是:{}",id);
+        City city = null;
+        city = cityMapper.selectByPrimaryKey(id);
+        // 模拟取数据时候的异常信息
+        try {
+            //停顿2-12ms
+            Thread.sleep((int) (Math.random() * 10) + 2);
+        } catch (InterruptedException e) {
+            // 不处理异常情况
+        }
 
-        /**
-         * 没有上面这句话时候会去读从库，加了之后会去读主库
-         * ，sharding-jdbc会自动选择去读取从库还是主库
-         */
+        // 5%的概率会去调用fallback,失败
+        if (Math.random() > 0.95) {
+            throw new RuntimeException("执行getOneCity请求时候随机失败啦----------");
+        }
 
-        return cityMapper.selectByPrimaryKey(id);
+        // 5%的概率导致超时情况发生
+        if (Math.random() > 0.95) {
+            // 随机触发
+            try {
+                Thread.sleep((int) (Math.random() * 300) + 25);
+            } catch (InterruptedException e) {
+                // 超时不作处理
+            }
+        }
+        return city;
+    }
+
+    public City defaultCity(Integer id){
+        City city  =new City();
+        city.setId(1000);
+        city.setName("我是测试城市");
+        city.setCountry("中国");
+        return city;
     }
 
     /**
