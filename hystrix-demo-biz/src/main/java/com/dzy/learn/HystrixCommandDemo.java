@@ -12,6 +12,7 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.math.BigDecimal;
 import java.net.HttpCookie;
@@ -25,13 +26,17 @@ import java.util.concurrent.*;
  */
 public class HystrixCommandDemo {
 
-    /*
-    * 线程池模拟http请求
-    *
-    * 使用调用方运行策略，这样我们就可以继续迭代并添加它，它将在满时阻塞
-    *
-    */
+    /**
+     * 使用调用方运行策略，这样我们就可以继续迭代并添加它，它将在满时阻塞
+     * 达到5个线程的时候开始阻塞
+     */
     private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+
+
+    /**
+     * 监控线程
+     */
+    private final ThreadPoolTaskExecutor monitorPool = new ThreadPoolTaskExecutor();
 
 
     public static void main(String[] args) {
@@ -63,7 +68,7 @@ public class HystrixCommandDemo {
 
 
     public void startMetricsMonitor(){
-        Thread t=new Thread(new Runnable() {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 while (true) {
@@ -116,10 +121,11 @@ public class HystrixCommandDemo {
                 return m.toString();
             }
 
-        });
-
-        t.setDaemon(true);//设置为守护进程，如垃圾回收的进程
-        t.start();//线程开始啦
+        };
+        //设置为守护进程
+        monitorPool.setDaemon(true);
+        monitorPool.initialize();
+        monitorPool.execute(runnable);
     }
 
 
