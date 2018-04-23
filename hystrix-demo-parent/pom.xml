@@ -145,10 +145,9 @@
                     <version>1.5.12</version>
                 </dependency>-->
 
-                <!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-hystrix -->
                 <dependency>
                     <groupId>org.springframework.cloud</groupId>
-                    <artifactId>spring-cloud-starter-hystrix</artifactId>
+                    <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
                     <version>1.4.3.RELEASE</version>
                 </dependency>
 

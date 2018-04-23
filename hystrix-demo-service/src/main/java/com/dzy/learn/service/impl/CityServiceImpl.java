@@ -4,11 +4,16 @@ import com.dzy.learn.dao.mapper.CityMapper;
 import com.dzy.learn.model.City;
 import com.dzy.learn.service.CityService;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rx.Observable;
+import rx.Subscriber;
+
+import java.util.concurrent.Future;
 
 /**
  * Created by dengzhiyuan on 2017/4/6.
@@ -35,7 +40,7 @@ public class CityServiceImpl implements CityService {
         }
 
         // 40%的概率会去调用fallback,失败
-        if (Math.random() > 0.6) {
+        if (Math.random() > 0.01) {
             LOG.warn("因为代码原因和网络原因执行失败了，需要调用fallback方法");
             throw new RuntimeException("执行getOneCity请求时候随机失败啦----------");
         }
@@ -54,6 +59,10 @@ public class CityServiceImpl implements CityService {
     }
 
     public City defaultCity(Integer id){
+        return generateTemplateCity();
+    }
+
+    private City generateTemplateCity() {
         LOG.info("我是回调方法，我被调用了........");
         City city  =new City();
         city.setId(1000);
@@ -86,4 +95,33 @@ public class CityServiceImpl implements CityService {
         return  cityMapper.selectByPrimaryKey(2);
         //实际测试sharding-jdbc在写完主库之后，会去从库读
     }
+
+
+    @Override
+    @HystrixCommand(fallbackMethod = "defaultCity")
+    public Future<City> getCityFromFuture() {
+        return new AsyncResult<City>() {
+            @Override
+            public City invoke() {
+                return generateTemplateCity();
+            }
+        };
+    }
+
+    @Override
+    @HystrixCommand(fallbackMethod="defaultCity")
+    public Observable<City> getCityFromObserve() {
+        return Observable.create(observer -> {
+            try {
+                if (!observer.isUnsubscribed()) {
+                    observer.onNext(generateTemplateCity());
+                    observer.onCompleted();
+                }
+            } catch (Exception e) {
+                observer.onError(e);
+            }
+        });
+    }
+
+
 }
