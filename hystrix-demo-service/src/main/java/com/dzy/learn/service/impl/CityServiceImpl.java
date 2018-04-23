@@ -31,6 +31,13 @@ public class CityServiceImpl implements CityService {
     public City getOne(Integer id) {
         City city = null;
         city = cityMapper.selectByPrimaryKey(id);
+        emulateException();
+
+        LOG.warn("执行成功");
+        return city;
+    }
+
+    private void emulateException() {
         // 模拟取数据时候的异常信息
         try {
             //停顿2-12ms
@@ -54,8 +61,6 @@ public class CityServiceImpl implements CityService {
                 // 超时不作处理
             }
         }
-        LOG.warn("执行成功");
-        return city;
     }
 
     public City defaultCity(Integer id){
@@ -99,22 +104,24 @@ public class CityServiceImpl implements CityService {
 
     @Override
     @HystrixCommand(fallbackMethod = "defaultCity")
-    public Future<City> getCityFromFuture() {
+    public Future<City> getCityFromFuture(Integer id) {
         return new AsyncResult<City>() {
             @Override
             public City invoke() {
-                return generateTemplateCity();
+                emulateException();
+                return cityMapper.selectByPrimaryKey(id);
             }
         };
     }
 
     @Override
     @HystrixCommand(fallbackMethod="defaultCity")
-    public Observable<City> getCityFromObserve() {
+    public Observable<City> getCityFromObserve(Integer id) {
         return Observable.create(observer -> {
             try {
                 if (!observer.isUnsubscribed()) {
-                    observer.onNext(generateTemplateCity());
+                    emulateException();
+                    observer.onNext(cityMapper.selectByPrimaryKey(id));
                     observer.onCompleted();
                 }
             } catch (Exception e) {

@@ -10,8 +10,8 @@ import java.util.concurrent.Future;
  */
 public interface CityService {
     City getOne(Integer id);
-    Future<City> getCityFromFuture();
-    Observable<City> getCityFromObserve();
+    Future<City> getCityFromFuture(Integer id);
+    Observable<City> getCityFromObserve(Integer id);
 
 
     Integer addOneCity(City city);
