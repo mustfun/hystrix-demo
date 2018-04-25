@@ -3,7 +3,9 @@ package com.dzy.learn.service.impl;
 import com.dzy.learn.dao.mapper.CityMapper;
 import com.dzy.learn.model.City;
 import com.dzy.learn.service.CityService;
+import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +29,21 @@ public class CityServiceImpl implements CityService {
     private CityMapper cityMapper;
 
     @Override
-    @HystrixCommand(fallbackMethod = "defaultCity")
+    @HystrixCommand(fallbackMethod = "defaultCity",commandProperties = {
+            @HystrixProperty(name = "execution.isolation.strategy", value = "THREAD"),
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "2000"),
+            @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "10000")//滑动窗口设置为10s
+    },
+            threadPoolProperties = {
+            @HystrixProperty(name = "coreSize", value = "5"),
+            @HystrixProperty(name = "maxQueueSize", value = "3"),
+            @HystrixProperty(name = "queueSizeRejectionThreshold", value = "1")
+    }
+    )
     public City getOne(Integer id) {
         City city = null;
-        city = cityMapper.selectByPrimaryKey(id);
         emulateException();
-
+        city = cityMapper.selectByPrimaryKey(id);
         LOG.warn("执行成功");
         return city;
     }
@@ -46,17 +57,18 @@ public class CityServiceImpl implements CityService {
             // 不处理异常情况
         }
 
-        // 40%的概率会去调用fallback,失败
-        if (Math.random() > 0.01) {
+        // 5%的概率会去调用fallback,失败
+        if (Math.random() > 0.95) {
             LOG.warn("因为代码原因和网络原因执行失败了，需要调用fallback方法");
             throw new RuntimeException("执行getOneCity请求时候随机失败啦----------");
         }
 
-        // 5%的概率导致超时情况发生
-        if (Math.random() > 0.95) {
+        // 95%的概率导致超时情况发生
+        if (Math.random() > 0.05) {
             // 随机触发
             try {
-                Thread.sleep((int) (Math.random() * 300) + 25);
+                LOG.info("超时情况发生了");
+                Thread.sleep((int) (Math.random() * 10000) + 25);
             } catch (InterruptedException e) {
                 // 超时不作处理
             }
