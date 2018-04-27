@@ -1,10 +1,13 @@
 package com.dzy.learn.other;
 
+import com.alibaba.fastjson.JSONObject;
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.*;
+import rx.Observable;
+import rx.Observer;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -12,8 +15,13 @@ import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author dengzhiyuan
@@ -160,10 +168,138 @@ public class NormalTest {
             }
         });
 
-        //Observable<Long> longObservable = Observable.interval(1, TimeUnit.SECONDS).observeOn(Schedulers.io());
-        //longObservable.subscribe(i -> LOG.info("bufferTime:" + i));
 
     }
 
 
+    /**
+     * 跟lambda里面的map很像，传入4个String ， 返回一个Observable对象
+     */
+    @Test
+    public void flatMapTest() throws InterruptedException {
+
+
+        List<Integer> list = Arrays.asList(10, 5, 3, 2, 1, 0);
+
+        Observable.from(list).flatMap(new Func1<Integer, Observable<?>>() {
+            @Override
+            public Observable<?> call(Integer num) {
+                List<String> strings = Arrays.asList("|" + num + "|", "|" + num * 10 + "|", "|" + num * 100 + "|");
+                return Observable.from(strings);
+            }
+        }).subscribe(new Action1<Object>() {
+            @Override
+            public void call(Object o) {
+                LOG.info("新转化后的字符串是 = {}" , o);
+            }
+        });
+
+
+
+        List<Object> flatMapcollect = list.stream().flatMap(new Function<Integer, Stream<?>>() {
+            @Override
+            public Stream<?> apply(Integer integer) {
+                //通过list里面的元素创建一个list返回回去
+                List<Integer> list1 = Arrays.asList(integer, integer + 10, integer + 100, integer + 1000);
+                return list1.stream();
+            }
+        }).collect(Collectors.toList());
+
+        flatMapcollect.forEach(s->LOG.info("complex integer  = {}" , s));
+
+        Thread.sleep(5000);
+
+    }
+
+    /**
+     * 上一次操作的结果传递给这一次 作为参数使用，有点类似于递归
+     */
+    @Test
+    public void testReduce(){
+        List<Integer> list = Arrays.asList(10, 5, 3, 2, 1, 0);
+
+
+
+        Observable.from(list).reduce(new Func2<Integer, Integer, Integer>() {
+                    @Override
+                    public Integer call(Integer result, Integer num) {
+                        LOG.info("开始前： result {}, num = {}" , result,num);
+                        result+=num;
+                        return result;
+                    }
+                }).subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer result) {
+                        LOG.info("result = {}" , result);
+                    }
+                });
+
+        Observable.from(list)
+                .scan(new Func2<Integer, Integer, Integer>() {
+                    @Override
+                    public Integer call(Integer result, Integer num) {
+                        LOG.info("开始前： result {}, num = {}" , result,num);
+                        result+=num;
+                        return result;
+                    }
+                }).subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer result) {
+                        LOG.info("result = {}" , result);
+                    }
+                });
+
+
+    }
+
+    @Test
+    public void testMap(){
+        List<Integer> list = Arrays.asList(10, 5, 3, 2, 1, 0);
+
+        Observable.from(list)
+                .map(new Func1<Integer, Object>() {
+                    @Override
+                    public Object call(Integer integer) {
+                        return integer+"变成str";
+                    }
+                })
+                .subscribe(s -> LOG.info("s = {}" , s));
+    }
+
+    @Test
+    public void testWindow() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        Observable inputEventStream = Observable.create(new Observable.OnSubscribe<Object>() {
+            @Override
+            public void call(Subscriber<? super Object> subscriber) {
+                subscriber.onNext("我是生产者.........");
+            }
+        });
+
+        inputEventStream.window(1000,TimeUnit.MILLISECONDS).subscribe(new Action1() {
+            @Override
+            public void call(Object o) {
+                Calendar calendar = Calendar.getInstance();
+                int i = calendar.get(Calendar.SECOND);
+                LOG.info("我会{}就被唤醒触发...",i);
+            }
+        });
+        countDownLatch.await();
+
+
+
+        /*Observable.from(list).window(2, 2).subscribe(new Action1<Observable<Integer>>() {
+            @Override
+            public void call(Observable<Integer> integerObservable) {
+                integerObservable.reduce((sum, num) -> sum+=num).subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        LOG.info("我被2个打印一次 = {}" , integer);
+                    }
+                });
+            }
+        });*/
+        countDownLatch.await();
+    }
 }
