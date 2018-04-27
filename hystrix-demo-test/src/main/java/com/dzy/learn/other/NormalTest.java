@@ -302,4 +302,47 @@ public class NormalTest {
         });*/
         countDownLatch.await();
     }
+
+
+    /**
+     * 两个数字相加，reduce，scan用
+     */
+    public static final Func2<Integer, Integer, Integer> PUBLIC_SUM =
+            (integer, integer2) -> integer + integer2;
+
+    public static final Func1<Observable<Integer>, Observable<Integer>> WINDOW_SUM =
+            //跳过前3个数据
+            window -> window.scan(0, PUBLIC_SUM).skip(1);
+
+    public static final Func1<Observable<Integer>, Observable<Integer>> INNER_BUCKET_SUM =
+            integerObservable -> integerObservable.reduce(0, PUBLIC_SUM);
+
+    private Integer sum = 0;
+
+    @Test
+    public void testWindowSlide() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        BehaviorSubject<Integer> behaviorSubject = BehaviorSubject.create();
+        behaviorSubject
+                // 1秒作为一个基本块,横向移动
+                .window(1000, TimeUnit.MILLISECONDS)
+                //将flatMap汇总平铺成一个事件,然后累加成一个Observable<Integer>对象，比如说1s内有10个对象，被累加起来
+                .flatMap(INNER_BUCKET_SUM)
+                //对这个对象2个发送，步长为1
+                .window(2,1)
+                //对窗口里面的进行求和,用的scan, 每次累加都会打印出来
+                .flatMap(WINDOW_SUM)
+                .subscribe((Integer integer) ->
+                        // 输出统计数据到日志
+                        LOG.info("[{}] call ...... {}",
+                                Thread.currentThread().getName(), integer));
+
+        for (int i = 0; i < 1000; i++) {
+            //200ms生产一个数据，
+            behaviorSubject.onNext(i);
+            LOG.info("i = {}" ,i);
+            Thread.sleep(200);
+        }
+        countDownLatch.await();
+    }
 }

@@ -36,7 +36,7 @@ public class WindowUtils {
         SerializedSubject<Integer, Integer> serializedSubject = publishSubject.toSerialized();
 
         serializedSubject
-                // 5秒作为一个基本块
+                // 1秒作为一个基本块
                 .window(1000, TimeUnit.MILLISECONDS)
                 // 基本块内数据求和
                 .flatMap(INNER_BUCKET_SUM)
